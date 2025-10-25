@@ -13,8 +13,9 @@ func main() {
 	reader := bufio.NewReader(os.Stdin)
 	menu := lib.NewMenu()
 	cart := lib.NewCart()
+	history := lib.NewHistory()
 
-	fmt.Println("\nSelamat Datang di Starbuck")
+	fmt.Println("SELAMAT DATANG DI RESTAURANT")
 
 	for {
 		fmt.Println("\nPILIH MENU")
@@ -80,13 +81,42 @@ func main() {
 			reader.ReadString('\n')
 
 		case "3":
-			fmt.Println("Checkout")
+			if cart.IsEmpty() {
+				fmt.Println("Keranjang kosong. Silakan pesan menu terlebih dahulu.")
+			} else {
+				cart.Show()
+				total := cart.GetTotal()
+				fmt.Printf("\nTotal pembayaran: Rp %s\n", lib.FormatCurrency(total))
+
+				fmt.Println("\n1. Konfirmasi Pembayaran")
+				fmt.Println("2. Batal")
+				fmt.Print("Pilih: ")
+
+				confirm, _ := reader.ReadString('\n')
+				confirm = strings.TrimSpace(confirm)
+
+				if confirm == "1" {
+					items := cart.GetItems()
+					if len(items) > 0 {
+						history.Add(items, total)
+						cart.Clear()
+						fmt.Println("\nOrder berhasil! Terima kasih atas pesanan Anda.")
+					}
+				} else {
+					fmt.Println("Checkout dibatalkan.")
+				}
+			}
+
+			fmt.Print("\nTekan Enter untuk kembali...")
+			reader.ReadString('\n')
 
 		case "4":
-			fmt.Println("History")
+			history.Show()
+			fmt.Print("\nTekan Enter untuk kembali...")
+			reader.ReadString('\n')
 
 		case "5":
-			fmt.Println("Terima kasih")
+			fmt.Println("Terima kasih!")
 			return
 
 		default:
