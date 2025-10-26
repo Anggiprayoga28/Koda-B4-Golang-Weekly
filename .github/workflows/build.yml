@@ -1,0 +1,45 @@
+name: Build and Release Golang App
+run-name: Build & upload compiled binaries for multiple platforms
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+
+      - name: Get version from tag
+        run: echo "VERSION=${GITHUB_REF_NAME}" >> $GITHUB_ENV
+
+      - name: Build binaries
+        run: |
+          mkdir dist
+          GOOS=windows GOARCH=amd64 go build -o dist/Starbuck${{ env.VERSION }}_windows_amd64.exe .
+          GOOS=linux GOARCH=amd64 go build -o dist/Starbuck${{ env.VERSION }}_linux_amd64 .
+          GOOS=linux GOARCH=arm64 go build -o dist/Starbuck${{ env.VERSION }}_linux_arm64 .
+          GOOS=darwin GOARCH=arm64 go build -o dist/Starbuck${{ env.VERSION }}_darwin_arm64 .
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Release ${{ env.VERSION }}
+          tag_name: ${{ env.VERSION }}
+          files: |
+            dist/Starbuck${{ env.VERSION }}_windows_amd64.exe
+            dist/Starbuck${{ env.VERSION }}_linux_amd64
+            dist/Starbuck${{ env.VERSION }}_linux_arm64
+            dist/Starbuck${{ env.VERSION }}_darwin_arm64
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
