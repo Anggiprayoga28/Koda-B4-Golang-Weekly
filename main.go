@@ -105,7 +105,7 @@ func (app *Application) handleCheckout() {
 }
 
 func (app *Application) Run() {
-	fmt.Println("SELAMAT DATANG DI RESTAURANT")
+	fmt.Println("SELAMAT DATANG DI STARBUCK")
 
 	for {
 		app.showMainMenu()
