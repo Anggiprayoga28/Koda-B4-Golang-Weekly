@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 )
 
@@ -15,8 +16,14 @@ type MenuItem struct {
 	Price int
 }
 
+type MenuInterface interface {
+	Show()
+	Get(id string) (*MenuItem, error)
+}
+
 type Menu struct {
 	items map[string]*MenuItem
+	mu    sync.RWMutex
 }
 
 type ProductAPI struct {
@@ -45,6 +52,9 @@ func NewMenu() *Menu {
 }
 
 func (m *Menu) loadFromCache() bool {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	cacheFilePath := GetCacheFilePath()
 	cacheDuration := GetCacheDuration()
 
@@ -77,13 +87,35 @@ func (m *Menu) loadFromCache() bool {
 		return false
 	}
 
+	type result struct {
+		id   string
+		item *MenuItem
+	}
+
+	resultChan := make(chan result, len(products))
+	var wg sync.WaitGroup
+
 	for _, product := range products {
-		id := fmt.Sprintf("%d", product.ID)
-		m.items[id] = &MenuItem{
-			ID:    id,
-			Name:  product.Name,
-			Price: product.Price,
-		}
+		wg.Add(1)
+		go func(p ProductAPI) {
+			defer wg.Done()
+			id := fmt.Sprintf("%d", p.ID)
+			item := &MenuItem{
+				ID:    id,
+				Name:  p.Name,
+				Price: p.Price,
+			}
+			resultChan <- result{id: id, item: item}
+		}(product)
+	}
+
+	go func() {
+		wg.Wait()
+		close(resultChan)
+	}()
+
+	for res := range resultChan {
+		m.items[res.id] = res.item
 	}
 
 	fmt.Printf("Berhasil memuat %d item dari cache (%v)\n", len(products), cacheAge.Round(time.Second))
@@ -101,6 +133,9 @@ func (m *Menu) saveToCache(data []byte) error {
 }
 
 func (m *Menu) fetchFromAPI() error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	apiURL := GetAPIURL()
 
 	resp, err := http.Get(apiURL)
@@ -139,6 +174,9 @@ func (m *Menu) fetchFromAPI() error {
 }
 
 func (m *Menu) initializeItems() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	menuData := []MenuItem{
 		{"1", "Caffè Americano (Tall)", 39000},
 		{"2", "Caffè Latte (Tall)", 45000},
@@ -162,6 +200,9 @@ func (m *Menu) initializeItems() {
 }
 
 func (m *Menu) Show() {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
 	fmt.Println("\nDAFTAR MENU")
 	for i := 1; i <= len(m.items); i++ {
 		id := fmt.Sprintf("%d", i)
@@ -172,8 +213,13 @@ func (m *Menu) Show() {
 }
 
 func (m *Menu) Get(id string) (*MenuItem, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
 	if item, exists := m.items[id]; exists {
 		return item, nil
 	}
 	return nil, fmt.Errorf("menu tidak ditemukan")
 }
+
+var _ MenuInterface = (*Menu)(nil)
