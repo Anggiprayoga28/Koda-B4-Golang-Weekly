@@ -157,6 +157,12 @@ func (app *Application) Run() {
 }
 
 func main() {
+	err := lib.LoadConfig()
+	if err != nil {
+		fmt.Printf("Error loading config: %s\n", err)
+		fmt.Println("Menggunakan konfigurasi default")
+	}
+
 	app := NewApplication()
 	app.Run()
 }
