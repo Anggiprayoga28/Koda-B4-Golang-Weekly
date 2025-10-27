@@ -9,11 +9,15 @@ import (
 	"strings"
 )
 
+type ApplicationInterface interface {
+	Run()
+}
+
 type Application struct {
 	reader  *bufio.Reader
-	menu    *lib.Menu
-	cart    *lib.Cart
-	history *lib.History
+	menu    lib.MenuInterface
+	cart    lib.CartInterface
+	history lib.HistoryInterface
 }
 
 func NewApplication() *Application {
@@ -42,6 +46,12 @@ func (app *Application) showMainMenu() {
 }
 
 func (app *Application) handleOrder() {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Printf("Error: %v\n", r)
+		}
+	}()
+
 	app.menu.Show()
 	fmt.Println("\n0. Kembali")
 	menuID := app.ask("Pilih ID menu: ")
@@ -79,6 +89,12 @@ func (app *Application) handleOrder() {
 }
 
 func (app *Application) handleCheckout() {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Printf("Error: %v\n", r)
+		}
+	}()
+
 	if app.cart.IsEmpty() {
 		fmt.Println("Keranjang kosong. Silakan pesan menu terlebih dahulu.")
 	} else {
@@ -106,6 +122,12 @@ func (app *Application) handleCheckout() {
 }
 
 func (app *Application) handleClearCache() {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Printf("Error: %v\n", r)
+		}
+	}()
+
 	fmt.Println("\nHAPUS CACHE")
 	fmt.Println("Apakah Anda yakin ingin menghapus cache?")
 	fmt.Println("\n1. Ya, hapus cache")
@@ -128,6 +150,12 @@ func (app *Application) handleClearCache() {
 }
 
 func (app *Application) Run() {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Printf("Fatal error: %v\n", r)
+		}
+	}()
+
 	fmt.Println("SELAMAT DATANG DI STARBUCK")
 
 	for {
@@ -156,7 +184,15 @@ func (app *Application) Run() {
 	}
 }
 
+var _ ApplicationInterface = (*Application)(nil)
+
 func main() {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Printf("Program error: %v\n", r)
+		}
+	}()
+
 	err := lib.LoadConfig()
 	if err != nil {
 		fmt.Printf("Error loading config: %s\n", err)
