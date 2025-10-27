@@ -1,6 +1,9 @@
 package lib
 
-import "fmt"
+import (
+	"fmt"
+	"sync"
+)
 
 type CartItem struct {
 	ID    string
@@ -9,8 +12,18 @@ type CartItem struct {
 	Qty   int
 }
 
+type CartInterface interface {
+	Add(id string, qty int, menu MenuInterface) error
+	Show()
+	IsEmpty() bool
+	GetTotal() int
+	GetItems() []CartItem
+	Clear()
+}
+
 type Cart struct {
 	items []CartItem
+	mu    sync.Mutex
 }
 
 func NewCart() *Cart {
@@ -19,7 +32,10 @@ func NewCart() *Cart {
 	}
 }
 
-func (c *Cart) Add(id string, qty int, menu *Menu) error {
+func (c *Cart) Add(id string, qty int, menu MenuInterface) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	if qty <= 0 {
 		return fmt.Errorf("jumlah harus lebih dari 0")
 	}
@@ -49,6 +65,9 @@ func (c *Cart) Add(id string, qty int, menu *Menu) error {
 }
 
 func (c *Cart) Show() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	if len(c.items) == 0 {
 		fmt.Println("\nKeranjang kosong")
 		return
@@ -68,23 +87,56 @@ func (c *Cart) Show() {
 }
 
 func (c *Cart) IsEmpty() bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	return len(c.items) == 0
 }
 
 func (c *Cart) GetTotal() int {
-	total := 0
-	for _, item := range c.items {
-		total += item.Price * item.Qty
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if len(c.items) == 0 {
+		return 0
 	}
+
+	resultChan := make(chan int, len(c.items))
+	var wg sync.WaitGroup
+
+	for _, item := range c.items {
+		wg.Add(1)
+		go func(i CartItem) {
+			defer wg.Done()
+			resultChan <- i.Price * i.Qty
+		}(item)
+	}
+
+	go func() {
+		wg.Wait()
+		close(resultChan)
+	}()
+
+	total := 0
+	for subtotal := range resultChan {
+		total += subtotal
+	}
+
 	return total
 }
 
 func (c *Cart) GetItems() []CartItem {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	result := make([]CartItem, len(c.items))
 	copy(result, c.items)
 	return result
 }
 
 func (c *Cart) Clear() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	c.items = make([]CartItem, 0)
 }
+
+var _ CartInterface = (*Cart)(nil)
