@@ -25,11 +25,6 @@ type ProductAPI struct {
 	Price int    `json:"price"`
 }
 
-const (
-	cacheFilePath = "/tmp/menu_cache.json"
-	cacheDuration = 15 * time.Second
-)
-
 func NewMenu() *Menu {
 	menu := &Menu{
 		items: make(map[string]*MenuItem),
@@ -50,6 +45,9 @@ func NewMenu() *Menu {
 }
 
 func (m *Menu) loadFromCache() bool {
+	cacheFilePath := GetCacheFilePath()
+	cacheDuration := GetCacheDuration()
+
 	fileInfo, err := os.Stat(cacheFilePath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -93,6 +91,7 @@ func (m *Menu) loadFromCache() bool {
 }
 
 func (m *Menu) saveToCache(data []byte) error {
+	cacheFilePath := GetCacheFilePath()
 	err := os.WriteFile(cacheFilePath, data, 0644)
 	if err != nil {
 		return fmt.Errorf("gagal menyimpan cache: %w", err)
@@ -102,7 +101,9 @@ func (m *Menu) saveToCache(data []byte) error {
 }
 
 func (m *Menu) fetchFromAPI() error {
-	resp, err := http.Get("https://raw.githubusercontent.com/Anggiprayoga28/Koda-B4-Golang--Weekly-Data/refs/heads/main/dataProduct.json")
+	apiURL := GetAPIURL()
+
+	resp, err := http.Get(apiURL)
 	if err != nil {
 		return fmt.Errorf("error fetching data: %w", err)
 	}
