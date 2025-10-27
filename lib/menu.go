@@ -1,6 +1,11 @@
 package lib
 
-import "fmt"
+import (
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+)
 
 type MenuItem struct {
 	ID    string
@@ -12,12 +17,56 @@ type Menu struct {
 	items map[string]*MenuItem
 }
 
+type ProductAPI struct {
+	ID    int    `json:"id"`
+	Name  string `json:"name"`
+	Price int    `json:"price"`
+}
+
 func NewMenu() *Menu {
 	menu := &Menu{
 		items: make(map[string]*MenuItem),
 	}
-	menu.initializeItems()
+
+	err := menu.fetchFromAPI()
+	if err != nil {
+		fmt.Println("Warning: Gagal mengambil data dari API:", err)
+		fmt.Println("Menggunakan data default")
+		menu.initializeItems()
+	}
+
 	return menu
+}
+
+func (m *Menu) fetchFromAPI() error {
+	resp, err := http.Get("https://raw.githubusercontent.com/Anggiprayoga28/Koda-B4-Golang--Weekly-Data/refs/heads/main/dataProduct.json")
+	if err != nil {
+		return fmt.Errorf("error fetching data: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("error reading response: %w", err)
+	}
+
+	var products []ProductAPI
+	err = json.Unmarshal(body, &products)
+	if err != nil {
+		return fmt.Errorf("error parsing JSON: %w", err)
+	}
+
+	for _, product := range products {
+		id := fmt.Sprintf("%d", product.ID)
+		m.items[id] = &MenuItem{
+			ID:    id,
+			Name:  product.Name,
+			Price: product.Price,
+		}
+	}
+
+	fmt.Printf("Berhasil memuat %d item dari API\n", len(products))
+	return nil
 }
 
 func (m *Menu) initializeItems() {
