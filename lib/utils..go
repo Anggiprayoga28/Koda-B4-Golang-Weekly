@@ -1,9 +1,10 @@
 package lib
 
-import "strconv"
+import "fmt"
 
 func FormatCurrency(amount int) string {
-	str := strconv.Itoa(amount)
+	str := fmt.Sprintf("%d", amount)
+
 	n := len(str)
 	if n <= 3 {
 		return str
