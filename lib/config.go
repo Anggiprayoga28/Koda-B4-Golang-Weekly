@@ -21,7 +21,13 @@ var AppConfig = &Config{
 	APIURL:        "https://raw.githubusercontent.com/Anggiprayoga28/Koda-B4-Golang--Weekly-Data/refs/heads/main/dataProduct.json",
 }
 
-func LoadConfig() error {
+func LoadConfig() (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("panic: %v", r)
+		}
+	}()
+
 	file, err := os.Open(".env")
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -48,19 +54,23 @@ func LoadConfig() error {
 		key := strings.TrimSpace(parts[0])
 		value := strings.TrimSpace(parts[1])
 
-		switch key {
-		case "CACHE_DURATION":
-			if seconds, err := strconv.Atoi(value); err == nil {
-				AppConfig.CacheDuration = time.Duration(seconds) * time.Second
-			}
-		case "CACHE_FILE_PATH":
-			AppConfig.CacheFilePath = value
-		case "API_URL":
-			AppConfig.APIURL = value
-		}
+		updateConfig(&key, &value)
 	}
 
 	return scanner.Err()
+}
+
+func updateConfig(key *string, value *string) {
+	switch *key {
+	case "CACHE_DURATION":
+		if seconds, err := strconv.Atoi(*value); err == nil {
+			AppConfig.CacheDuration = time.Duration(seconds) * time.Second
+		}
+	case "CACHE_FILE_PATH":
+		AppConfig.CacheFilePath = *value
+	case "API_URL":
+		AppConfig.APIURL = *value
+	}
 }
 
 func GetCacheDuration() time.Duration {
