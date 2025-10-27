@@ -5,9 +5,8 @@ import (
 	"os"
 )
 
-const cacheFile = "/tmp/menu_cache.json"
-
 func ClearCache() error {
+	cacheFile := GetCacheFilePath()
 	err := os.Remove(cacheFile)
 	if err != nil {
 		if os.IsNotExist(err) {
