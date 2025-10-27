@@ -37,7 +37,8 @@ func (app *Application) showMainMenu() {
 	fmt.Println("2. Lihat Keranjang")
 	fmt.Println("3. Checkout")
 	fmt.Println("4. History")
-	fmt.Println("5. Exit")
+	fmt.Println("5. Hapus Cache")
+	fmt.Println("6. Exit")
 }
 
 func (app *Application) handleOrder() {
@@ -104,6 +105,28 @@ func (app *Application) handleCheckout() {
 	app.ask("\nTekan Enter untuk kembali...")
 }
 
+func (app *Application) handleClearCache() {
+	fmt.Println("\nHAPUS CACHE")
+	fmt.Println("Apakah Anda yakin ingin menghapus cache?")
+	fmt.Println("\n1. Ya, hapus cache")
+	fmt.Println("2. Batal")
+
+	confirm := app.ask("Pilih: ")
+
+	if confirm == "1" {
+		err := lib.ClearCache()
+		if err != nil {
+			fmt.Printf("\nGagal menghapus cache: %s\n", err)
+		} else {
+			fmt.Println("\nCache berhasil dihapus")
+		}
+	} else {
+		fmt.Println("\nPenghapusan cache dibatalkan.")
+	}
+
+	app.ask("\nTekan Enter untuk kembali...")
+}
+
 func (app *Application) Run() {
 	fmt.Println("SELAMAT DATANG DI STARBUCK")
 
@@ -123,6 +146,8 @@ func (app *Application) Run() {
 			app.history.Show()
 			app.ask("\nTekan Enter untuk kembali...")
 		case "5":
+			app.handleClearCache()
+		case "6":
 			fmt.Println("Terima kasih!")
 			return
 		default:
