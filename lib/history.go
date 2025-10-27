@@ -2,6 +2,7 @@ package lib
 
 import (
 	"fmt"
+	"sync"
 	"time"
 )
 
@@ -12,9 +13,15 @@ type Order struct {
 	Time  string
 }
 
+type HistoryInterface interface {
+	Add(items []CartItem, total int) bool
+	Show()
+}
+
 type History struct {
 	orders     []Order
 	maxHistory int
+	mu         sync.Mutex
 }
 
 func NewHistory() *History {
@@ -25,6 +32,9 @@ func NewHistory() *History {
 }
 
 func (h *History) Add(items []CartItem, total int) bool {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
 	if len(items) == 0 || total <= 0 {
 		return false
 	}
@@ -51,6 +61,9 @@ func (h *History) Add(items []CartItem, total int) bool {
 }
 
 func (h *History) Show() {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
 	if len(h.orders) == 0 {
 		fmt.Println("\nTidak ada riwayat pesanan")
 		return
@@ -70,3 +83,5 @@ func (h *History) Show() {
 		}
 	}
 }
+
+var _ HistoryInterface = (*History)(nil)
