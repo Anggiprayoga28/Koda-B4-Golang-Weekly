@@ -96,31 +96,10 @@ func (c *Cart) GetTotal() int {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	if len(c.items) == 0 {
-		return 0
-	}
-
-	resultChan := make(chan int, len(c.items))
-	var wg sync.WaitGroup
-
-	for _, item := range c.items {
-		wg.Add(1)
-		go func(i CartItem) {
-			defer wg.Done()
-			resultChan <- i.Price * i.Qty
-		}(item)
-	}
-
-	go func() {
-		wg.Wait()
-		close(resultChan)
-	}()
-
 	total := 0
-	for subtotal := range resultChan {
-		total += subtotal
+	for _, item := range c.items {
+		total += item.Price * item.Qty
 	}
-
 	return total
 }
 
