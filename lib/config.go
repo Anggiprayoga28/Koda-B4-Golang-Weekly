@@ -8,17 +8,19 @@ import (
 )
 
 type Config struct {
-	// CacheDuration time.Duration
-	// CacheFilePath string
 	APIURL      string
 	DatabaseURL string
 }
 
 var AppConfig = &Config{
-	// CacheDuration: 15 * time.Minute,
-	// CacheFilePath: "/tmp/menu_cache.json",
-	// APIURL:      "https://raw.githubusercontent.com/Anggiprayoga28/Koda-B4-Golang--Weekly-Data/refs/heads/main/dataProduct.json",
-	DatabaseURL: "",
+	DatabaseURL: getEnvOrDefault("DATABASE_URL", ""),
+}
+
+func getEnvOrDefault(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
 }
 
 func LoadConfig() (err error) {
@@ -28,10 +30,20 @@ func LoadConfig() (err error) {
 		}
 	}()
 
+	if dbURL := os.Getenv("DATABASE_URL"); dbURL != "" {
+		AppConfig.DatabaseURL = dbURL
+		fmt.Println("Menggunakan DATABASE_URL dari environment variable")
+	}
+
+	if apiURL := os.Getenv("API_URL"); apiURL != "" {
+		AppConfig.APIURL = apiURL
+		fmt.Println("Menggunakan API_URL dari environment variable")
+	}
+
 	file, err := os.Open(".env")
 	if err != nil {
 		if os.IsNotExist(err) {
-			fmt.Println("File .env tidak ditemukan, menggunakan konfigurasi default")
+			fmt.Println("File .env tidak ditemukan, menggunakan environment variables atau default")
 			return nil
 		}
 		return err
@@ -62,28 +74,12 @@ func LoadConfig() (err error) {
 
 func updateConfig(key *string, value *string) {
 	switch *key {
-	// case "CACHE_DURATION":
-	// 	if seconds, err := strconv.Atoi(*value); err == nil {
-	// 		AppConfig.CacheDuration = time.Duration(seconds) * time.Second
-	// 	}
-	// case "CACHE_FILE_PATH":
-	// 	AppConfig.CacheFilePath = *value
 	case "API_URL":
 		AppConfig.APIURL = *value
 	case "DATABASE_URL":
 		AppConfig.DatabaseURL = *value
 	}
 }
-
-/*
-func GetCacheDuration() time.Duration {
-	return AppConfig.CacheDuration
-}
-
-func GetCacheFilePath() string {
-	return AppConfig.CacheFilePath
-}
-*/
 
 func GetAPIURL() string {
 	return AppConfig.APIURL
