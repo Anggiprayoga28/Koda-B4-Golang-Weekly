@@ -9,10 +9,6 @@ import (
 	"strings"
 )
 
-type ApplicationInterface interface {
-	Run()
-}
-
 type Application struct {
 	reader  *bufio.Reader
 	menu    lib.MenuInterface
@@ -50,17 +46,10 @@ func (app *Application) showMainMenu() {
 	fmt.Println("2. Lihat Keranjang")
 	fmt.Println("3. Checkout")
 	fmt.Println("4. History")
-	// fmt.Println("5. Hapus Cache")
 	fmt.Println("5. Exit")
 }
 
 func (app *Application) handleOrder() {
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Printf("Error: %v\n", r)
-		}
-	}()
-
 	app.menu.Show()
 	fmt.Println("\n0. Kembali")
 	menuID := app.ask("Pilih ID menu: ")
@@ -98,12 +87,6 @@ func (app *Application) handleOrder() {
 }
 
 func (app *Application) handleCheckout() {
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Printf("Error: %v\n", r)
-		}
-	}()
-
 	if app.cart.IsEmpty() {
 		fmt.Println("Keranjang kosong. Silakan pesan menu terlebih dahulu.")
 	} else {
@@ -130,44 +113,8 @@ func (app *Application) handleCheckout() {
 	app.ask("\nTekan Enter untuk kembali...")
 }
 
-/*
-func (app *Application) handleClearCache() {
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Printf("Error: %v\n", r)
-		}
-	}()
-
-	fmt.Println("\nHAPUS CACHE")
-	fmt.Println("Apakah Anda yakin ingin menghapus cache?")
-	fmt.Println("\n1. Ya, hapus cache")
-	fmt.Println("2. Batal")
-
-	confirm := app.ask("Pilih: ")
-
-	if confirm == "1" {
-		err := lib.ClearCache()
-		if err != nil {
-			fmt.Printf("\nGagal menghapus cache: %s\n", err)
-		} else {
-			fmt.Println("\nCache berhasil dihapus")
-		}
-	} else {
-		fmt.Println("\nPenghapusan cache dibatalkan.")
-	}
-
-	app.ask("\nTekan Enter untuk kembali...")
-}
-*/
-
 func (app *Application) Run() {
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Printf("Fatal error: %v\n", r)
-		}
-	}()
-
-	fmt.Println("SELAMAT DATANG DI STARBUCK")
+	fmt.Println("SELAMAT DATANG DI STARBUCKS")
 
 	for {
 		app.showMainMenu()
@@ -184,8 +131,6 @@ func (app *Application) Run() {
 		case "4":
 			app.history.Show()
 			app.ask("\nTekan Enter untuk kembali...")
-		// case "5":
-		// 	app.handleClearCache()
 		case "5":
 			fmt.Println("Terima kasih!")
 			return
@@ -195,19 +140,12 @@ func (app *Application) Run() {
 	}
 }
 
-var _ ApplicationInterface = (*Application)(nil)
-
 func main() {
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Printf("Program error: %v\n", r)
-		}
-	}()
-
 	err := lib.LoadConfig()
 	if err != nil {
-		fmt.Printf("Error loading config: %s\n", err)
-		fmt.Println("Menggunakan konfigurasi default")
+		fmt.Printf("Error: %s\n", err)
+		fmt.Println("Buat file .env dengan DATABASE_URL")
+		os.Exit(1)
 	}
 
 	app := NewApplication()
