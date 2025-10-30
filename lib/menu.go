@@ -64,7 +64,7 @@ func NewMenu() *Menu {
 	if err != nil {
 		fmt.Println("Warning: Gagal mengambil data dari API:", err)
 		fmt.Println("Menggunakan data default")
-		menu.initializeItems()
+		// menu.initializeItems()
 	} else {
 		menu.saveToDatabase()
 	}
@@ -285,31 +285,31 @@ func (m *Menu) fetchFromAPI() error {
 	return nil
 }
 
-func (m *Menu) initializeItems() {
-	m.mu.Lock()
-	defer m.mu.Unlock()
+// func (m *Menu) initializeItems() {
+// 	m.mu.Lock()
+// 	defer m.mu.Unlock()
 
-	menuData := []MenuItem{
-		{"1", "Caffè Americano (Tall)", 39000},
-		{"2", "Caffè Latte (Tall)", 45000},
-		{"3", "Cappuccino (Tall)", 45000},
-		{"4", "Caramel Macchiato (Tall)", 55000},
-		{"5", "Espresso (Double Shot)", 35000},
-		{"6", "Mocha Frappuccino", 58000},
-		{"7", "Java Chip Frappuccino", 60000},
-		{"8", "Green Tea Latte", 55000},
-		{"9", "Signature Chocolate", 52000},
-		{"10", "Vanilla Sweet Cream Cold Brew", 56000},
-	}
+// 	menuData := []MenuItem{
+// 		{"1", "Caffè Americano (Tall)", 39000},
+// 		{"2", "Caffè Latte (Tall)", 45000},
+// 		{"3", "Cappuccino (Tall)", 45000},
+// 		{"4", "Caramel Macchiato (Tall)", 55000},
+// 		{"5", "Espresso (Double Shot)", 35000},
+// 		{"6", "Mocha Frappuccino", 58000},
+// 		{"7", "Java Chip Frappuccino", 60000},
+// 		{"8", "Green Tea Latte", 55000},
+// 		{"9", "Signature Chocolate", 52000},
+// 		{"10", "Vanilla Sweet Cream Cold Brew", 56000},
+// 	}
 
-	for _, item := range menuData {
-		m.items[item.ID] = &MenuItem{
-			ID:    item.ID,
-			Name:  item.Name,
-			Price: item.Price,
-		}
-	}
-}
+// 	for _, item := range menuData {
+// 		m.items[item.ID] = &MenuItem{
+// 			ID:    item.ID,
+// 			Name:  item.Name,
+// 			Price: item.Price,
+// 		}
+// 	}
+// }
 
 func (m *Menu) Show() {
 	m.mu.RLock()
