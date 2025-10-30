@@ -4,21 +4,21 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"strconv"
 	"strings"
-	"time"
 )
 
 type Config struct {
-	CacheDuration time.Duration
-	CacheFilePath string
-	APIURL        string
+	// CacheDuration time.Duration
+	// CacheFilePath string
+	APIURL      string
+	DatabaseURL string
 }
 
 var AppConfig = &Config{
-	CacheDuration: 15 * time.Minute,
-	CacheFilePath: "/tmp/menu_cache.json",
-	APIURL:        "https://raw.githubusercontent.com/Anggiprayoga28/Koda-B4-Golang--Weekly-Data/refs/heads/main/dataProduct.json",
+	// CacheDuration: 15 * time.Minute,
+	// CacheFilePath: "/tmp/menu_cache.json",
+	// APIURL:      "https://raw.githubusercontent.com/Anggiprayoga28/Koda-B4-Golang--Weekly-Data/refs/heads/main/dataProduct.json",
+	DatabaseURL: "",
 }
 
 func LoadConfig() (err error) {
@@ -62,17 +62,20 @@ func LoadConfig() (err error) {
 
 func updateConfig(key *string, value *string) {
 	switch *key {
-	case "CACHE_DURATION":
-		if seconds, err := strconv.Atoi(*value); err == nil {
-			AppConfig.CacheDuration = time.Duration(seconds) * time.Second
-		}
-	case "CACHE_FILE_PATH":
-		AppConfig.CacheFilePath = *value
+	// case "CACHE_DURATION":
+	// 	if seconds, err := strconv.Atoi(*value); err == nil {
+	// 		AppConfig.CacheDuration = time.Duration(seconds) * time.Second
+	// 	}
+	// case "CACHE_FILE_PATH":
+	// 	AppConfig.CacheFilePath = *value
 	case "API_URL":
 		AppConfig.APIURL = *value
+	case "DATABASE_URL":
+		AppConfig.DatabaseURL = *value
 	}
 }
 
+/*
 func GetCacheDuration() time.Duration {
 	return AppConfig.CacheDuration
 }
@@ -80,7 +83,12 @@ func GetCacheDuration() time.Duration {
 func GetCacheFilePath() string {
 	return AppConfig.CacheFilePath
 }
+*/
 
 func GetAPIURL() string {
 	return AppConfig.APIURL
+}
+
+func GetDatabaseURL() string {
+	return AppConfig.DatabaseURL
 }

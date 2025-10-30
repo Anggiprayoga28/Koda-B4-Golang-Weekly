@@ -29,6 +29,15 @@ func NewApplication() *Application {
 	}
 }
 
+func (app *Application) Cleanup() {
+	if app.menu != nil {
+		app.menu.Close()
+	}
+	if app.history != nil {
+		app.history.Close()
+	}
+}
+
 func (app *Application) ask(question string) string {
 	fmt.Print(question)
 	input, _ := app.reader.ReadString('\n')
@@ -41,8 +50,8 @@ func (app *Application) showMainMenu() {
 	fmt.Println("2. Lihat Keranjang")
 	fmt.Println("3. Checkout")
 	fmt.Println("4. History")
-	fmt.Println("5. Hapus Cache")
-	fmt.Println("6. Exit")
+	// fmt.Println("5. Hapus Cache")
+	fmt.Println("5. Exit")
 }
 
 func (app *Application) handleOrder() {
@@ -121,6 +130,7 @@ func (app *Application) handleCheckout() {
 	app.ask("\nTekan Enter untuk kembali...")
 }
 
+/*
 func (app *Application) handleClearCache() {
 	defer func() {
 		if r := recover(); r != nil {
@@ -148,6 +158,7 @@ func (app *Application) handleClearCache() {
 
 	app.ask("\nTekan Enter untuk kembali...")
 }
+*/
 
 func (app *Application) Run() {
 	defer func() {
@@ -173,9 +184,9 @@ func (app *Application) Run() {
 		case "4":
 			app.history.Show()
 			app.ask("\nTekan Enter untuk kembali...")
+		// case "5":
+		// 	app.handleClearCache()
 		case "5":
-			app.handleClearCache()
-		case "6":
 			fmt.Println("Terima kasih!")
 			return
 		default:
@@ -200,5 +211,7 @@ func main() {
 	}
 
 	app := NewApplication()
+	defer app.Cleanup()
+
 	app.Run()
 }
