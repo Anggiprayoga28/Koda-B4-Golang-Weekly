@@ -32,20 +32,22 @@ type History struct {
 func NewHistory() *History {
 	history := &History{
 		orders:     make([]Order, 0),
-		maxHistory: 5,
+		maxHistory: 10,
 	}
 
 	databaseURL := GetDatabaseURL()
-	if databaseURL != "" {
-		conn, err := pgx.Connect(context.Background(), databaseURL)
-		if err != nil {
-			fmt.Println("Warning: History tidak bisa connect ke database:", err)
-		} else {
-			history.conn = conn
-			history.loadFromDatabase()
-		}
+	if databaseURL == "" {
+		return history
 	}
 
+	conn, err := pgx.Connect(context.Background(), databaseURL)
+	if err != nil {
+		fmt.Println("Warning: History tidak bisa connect ke database:", err)
+		return history
+	}
+
+	history.conn = conn
+	history.loadFromDatabase()
 	return history
 }
 
@@ -65,12 +67,11 @@ func (h *History) loadFromDatabase() {
 
 	query := `SELECT id, total, order_date, order_time 
 			  FROM orders 
-			  ORDER BY order_date DESC, order_time DESC 
+			  ORDER BY created_at DESC 
 			  LIMIT $1`
 
 	rows, err := h.conn.Query(context.Background(), query, h.maxHistory)
 	if err != nil {
-		fmt.Println("Error loading history from database:", err)
 		return
 	}
 	defer rows.Close()
@@ -127,9 +128,6 @@ func (h *History) loadFromDatabase() {
 	}
 
 	h.orders = tempOrders
-	if len(h.orders) > 0 {
-		fmt.Printf("Berhasil memuat %d history dari database\n", len(h.orders))
-	}
 }
 
 func (h *History) saveToDatabase(order Order) error {
@@ -137,27 +135,34 @@ func (h *History) saveToDatabase(order Order) error {
 		return nil
 	}
 
+	ctx := context.Background()
+	tx, err := h.conn.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
 	var orderID int
 	insertOrderQuery := `INSERT INTO orders (total, order_date, order_time) 
 						 VALUES ($1, $2, $3) 
 						 RETURNING id`
 
-	err := h.conn.QueryRow(context.Background(), insertOrderQuery, order.Total, order.Date, order.Time).Scan(&orderID)
+	err = tx.QueryRow(ctx, insertOrderQuery, order.Total, order.Date, order.Time).Scan(&orderID)
 	if err != nil {
-		return fmt.Errorf("gagal menyimpan order: %w", err)
+		return err
 	}
 
 	for _, item := range order.Items {
 		insertItemQuery := `INSERT INTO order_items (order_id, menu_id, name, price, quantity) 
 							VALUES ($1, $2, $3, $4, $5)`
 
-		_, err := h.conn.Exec(context.Background(), insertItemQuery, orderID, item.ID, item.Name, item.Price, item.Qty)
+		_, err := tx.Exec(ctx, insertItemQuery, orderID, item.ID, item.Name, item.Price, item.Qty)
 		if err != nil {
-			fmt.Printf("Warning: gagal menyimpan item %s: %v\n", item.Name, err)
+			return err
 		}
 	}
 
-	return nil
+	return tx.Commit(ctx)
 }
 
 func (h *History) Add(items []CartItem, total int) bool {
@@ -182,7 +187,8 @@ func (h *History) Add(items []CartItem, total int) bool {
 
 	err := h.saveToDatabase(order)
 	if err != nil {
-		fmt.Println("Warning: gagal menyimpan history ke database:", err)
+		fmt.Println("Warning: gagal menyimpan ke database:", err)
+		return false
 	}
 
 	h.orders = append([]Order{order}, h.orders...)
